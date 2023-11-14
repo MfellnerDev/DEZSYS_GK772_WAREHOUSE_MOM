@@ -13,7 +13,7 @@ import java.util.Collections;
  * @version 14.11.2023
  */
 @SpringBootApplication
-public class MOMApplication implements CommandLineRunner {
+public class MOMApplication {
 
 	public static void main(String[] args) {
 		System.out.println("Starting app...");
@@ -21,17 +21,4 @@ public class MOMApplication implements CommandLineRunner {
 		app.setDefaultProperties(Collections
 				.singletonMap("server.port", "8081"));
 		app.run(args);	}
-
-	@Override
-	public void run(String... args) throws Exception {
-		String flag = "receiver";
-		for (String arg : args) {
-			flag = arg;
-		}
-
-		if (flag.equalsIgnoreCase("sender"))
-			new MOMSender();
-		else
-			new MOMReceiver();
-	}
 }

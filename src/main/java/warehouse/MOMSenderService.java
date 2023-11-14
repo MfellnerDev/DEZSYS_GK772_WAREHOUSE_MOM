@@ -2,6 +2,7 @@ package warehouse;
 
 import org.apache.activemq.ActiveMQConnection;
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import javax.jms.*;
@@ -12,7 +13,8 @@ import javax.jms.*;
  * @author Manuel Fellner
  * @version 14.11.2023
  */
-public class MOMSender {
+@Service
+public class MOMSenderService {
 
     private static String warehouseUUID = "469d7240-b974-441d-9562-2c56a7b28767";
     private static String warehouseAPIUrl = "http://localhost:8080/warehouse/" + warehouseUUID + "/data";
@@ -20,9 +22,9 @@ public class MOMSender {
     private static String user = ActiveMQConnection.DEFAULT_USER;
     private static String password = ActiveMQConnection.DEFAULT_PASSWORD;
     private static String url = ActiveMQConnection.DEFAULT_BROKER_URL;
-    private static String queueName = "warehouse-LINZ";
+    private static String topicName = "warehouse-LINZ";
 
-    public MOMSender()  {
+    public void sendMessage()   {
         System.out.println("Sender startet...");
 
         // create a connection to the apacheMQ broker
@@ -38,11 +40,11 @@ public class MOMSender {
 
             // Create the session
             session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            destination = session.createTopic(queueName);
+            destination = session.createTopic(topicName);
 
             // Create the producer
             producer = session.createProducer(destination);
-            producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
+            producer.setDeliveryMode(DeliveryMode.PERSISTENT);
 
             // Create the message
             String currentWarehouseData = consumeWarehouseAPI();
