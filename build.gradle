@@ -4,7 +4,7 @@ plugins {
 	id 'java'
 }
 
-group = 'dezsys'
+group = 'warehouse'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '11'
 
@@ -13,10 +13,17 @@ repositories {
 }
 
 dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-activemq'
 	implementation 'org.springframework.boot:spring-boot-starter-data-rest'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+bootRun {
+	if (project.hasProperty('args')) {
+		args project.args.split(',')
+	}
 }
 
 test {
