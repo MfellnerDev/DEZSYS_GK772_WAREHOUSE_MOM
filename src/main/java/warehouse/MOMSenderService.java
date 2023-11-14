@@ -22,10 +22,10 @@ public class MOMSenderService {
     private static String user = ActiveMQConnection.DEFAULT_USER;
     private static String password = ActiveMQConnection.DEFAULT_PASSWORD;
     private static String url = ActiveMQConnection.DEFAULT_BROKER_URL;
-    private static String topicName = "warehouse-LINZ";
+    private static String queueName = "warehouse-LINZ";
 
     public void sendMessage()   {
-        System.out.println("Sender startet...");
+        System.out.println("Sender started...");
 
         // create a connection to the apacheMQ broker
         Session session = null;
@@ -40,11 +40,11 @@ public class MOMSenderService {
 
             // Create the session
             session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            destination = session.createTopic(topicName);
+            destination = session.createQueue(queueName);
 
             // Create the producer
             producer = session.createProducer(destination);
-            producer.setDeliveryMode(DeliveryMode.PERSISTENT);
+            producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
 
             // Create the message
             String currentWarehouseData = consumeWarehouseAPI();

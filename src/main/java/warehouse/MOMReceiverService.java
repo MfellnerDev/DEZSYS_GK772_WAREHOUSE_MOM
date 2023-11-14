@@ -23,7 +23,7 @@ public class MOMReceiverService {
     private static String user = ActiveMQConnection.DEFAULT_USER;
     private static String password = ActiveMQConnection.DEFAULT_PASSWORD;
     private static String url = ActiveMQConnection.DEFAULT_BROKER_URL;
-    private static String topicName = "warehouse-LINZ";
+    private static String queueName = "warehouse-LINZ";
 
     public String readMessageQueue() {
         System.out.println( "Receiver started." );
@@ -36,41 +36,39 @@ public class MOMReceiverService {
         StringBuilder receivedMessages = null;
 
         try {
-
             ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(user, password, url);
             connection = connectionFactory.createConnection();
             connection.start();
 
             // Create the session
             session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            destination = session.createTopic(topicName);
+            destination = session.createQueue(queueName);
 
             // Create the consumer
-            consumer = session.createConsumer( destination );
+            consumer = session.createConsumer(destination);
 
             // Start receiving
             receivedMessages = new StringBuilder();
-            TextMessage message = (TextMessage) consumer.receive();
+            TextMessage message = (TextMessage) consumer.receive(1000);
             while ( message != null ) {
                 receivedMessages.append(message.getText());
                 message.acknowledge();
-                message = (TextMessage) consumer.receive();
+                message = (TextMessage) consumer.receive(1000);
             }
             connection.stop();
 
         } catch (Exception e) {
-
             System.out.println("[MessageConsumer] Caught: " + e);
             e.printStackTrace();
 
         } finally {
-
             try { consumer.close(); } catch ( Exception e ) {}
             try { session.close(); } catch ( Exception e ) {}
             try { connection.close(); } catch ( Exception e ) {}
 
         }
         System.out.println( "Receiver finished." );
+        System.out.println(receivedMessages.toString());
         return receivedMessages.toString();
     }
 
