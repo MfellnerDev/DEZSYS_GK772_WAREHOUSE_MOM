@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Warehouse consumer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+<div id="app" class="container mt-5">
+    <h1>Warehouse Data</h1>
+    <table class="table table-bordered">
+        <tbody>
+        <tr v-for="(item, key) in warehouseData" :key="key">
+            <td>{{ key }}</td>
+            <td>{{ item }}</td>
+        </tr>
+        </tbody>
+    </table>
+    <h1>Products stored in the warehouse</h1>
+    <table class="table table-bordered">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Kategory</th>
+            <th>Anzahl</th>
+            <th>Einheit</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="item in productData" :key="key">
+            <td>{{ item.productID }}</td>
+            <td>{{ item.productName }}</td>
+            <td>{{ item.productCategory }}</td>
+            <td>{{ item.productQuantity }}</td>
+            <td>{{ item.productUnit }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            warehouseData: {},
+            productData: {}
+        },
+        mounted() {
+            // Make a GET request using Axios to fetch JSON data
+            axios.get("http://localhost:8080/warehouse/469d7240-b974-441d-9562-2c56a7b28767/data")
+                .then(response => {
+                    this.productData = response.data.productData;
+                    delete response.data.productData;
+                    this.warehouseData = response.data;
+                })
+                .catch(error => {
+                    console.error("Error fetching data: " + error.message);
+                });
+        }
+    });
+</script>
+</body>
+</html>

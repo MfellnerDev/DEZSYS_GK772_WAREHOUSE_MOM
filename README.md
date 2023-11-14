@@ -1,2 +1,8 @@
-# DEZSYS_GK772_WAREHOUSE_MOM
-My implementation of the SYT DEZSYS_GK772_WAREHOUSE_MOM task.
+# Middleware Engineering "Distributed Architecture and Document Formats"
+
+## Aufgabenstellung
+Die detaillierte [Aufgabenstellung](TASK.md) beschreibt die notwendigen Schritte zur Realisierung.
+
+## Implementierung
+
+## Quellen
