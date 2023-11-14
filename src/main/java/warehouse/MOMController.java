@@ -14,18 +14,11 @@ import org.springframework.http.MediaType;
  */
 @RestController
 public class MOMController {
-    @Autowired
-    private MOMReceiverService receiverService;
-
-    @Autowired
-    private MOMSenderService senderService;
 
     @CrossOrigin
     @RequestMapping(value = "/warehouse/all", produces = MediaType.APPLICATION_JSON_VALUE)
     public String allWarehouseData()    {
-        // send all articles from the LINZ warehouse to the queue
-        senderService.sendMessage();
-        // read and return all messages from the queue
-        return receiverService.readMessageQueue();
+        // send, read and return all messages from the queue
+        return new MOMReceiver().getAllWarehouseData();
     }
 }

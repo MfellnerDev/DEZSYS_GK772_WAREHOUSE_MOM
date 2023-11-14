@@ -2,7 +2,6 @@ package warehouse;
 
 import org.apache.activemq.ActiveMQConnection;
 import org.apache.activemq.ActiveMQConnectionFactory;
-import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import javax.jms.*;
@@ -13,8 +12,7 @@ import javax.jms.*;
  * @author Manuel Fellner
  * @version 14.11.2023
  */
-@Service
-public class MOMSenderService {
+public class MOMSender {
 
     private static String warehouseUUID = "469d7240-b974-441d-9562-2c56a7b28767";
     private static String warehouseAPIUrl = "http://localhost:8080/warehouse/" + warehouseUUID + "/data";
@@ -24,7 +22,7 @@ public class MOMSenderService {
     private static String url = ActiveMQConnection.DEFAULT_BROKER_URL;
     private static String queueName = "warehouse-LINZ";
 
-    public void sendMessage()   {
+    public MOMSender() {
         System.out.println("Sender started...");
 
         // create a connection to the apacheMQ broker
@@ -40,7 +38,7 @@ public class MOMSenderService {
 
             // Create the session
             session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            destination = session.createQueue(queueName);
+            destination = session.createTopic(queueName);
 
             // Create the producer
             producer = session.createProducer(destination);
@@ -65,7 +63,7 @@ public class MOMSenderService {
         System.out.println("Sender finished.");
     }
 
-    public String consumeWarehouseAPI() {
+    public static String consumeWarehouseAPI() {
         System.out.println("Consuming the warehouse API with the url " + warehouseAPIUrl + "...");
         RestTemplate restTemplate = new RestTemplate();
         return restTemplate.getForObject(warehouseAPIUrl, String.class);

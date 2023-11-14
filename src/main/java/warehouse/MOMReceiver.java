@@ -2,7 +2,6 @@ package warehouse;
 
 import org.apache.activemq.ActiveMQConnection;
 import org.apache.activemq.ActiveMQConnectionFactory;
-import org.springframework.stereotype.Service;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -13,19 +12,19 @@ import javax.jms.TextMessage;
 
 /**
  * Receiver MOM Class
+ * It sends AND receives the data from a Topic
  *
  * @author Manuel Fellner
  * @version 14.11.2023
  */
 
-@Service
-public class MOMReceiverService {
+public class MOMReceiver {
     private static String user = ActiveMQConnection.DEFAULT_USER;
     private static String password = ActiveMQConnection.DEFAULT_PASSWORD;
     private static String url = ActiveMQConnection.DEFAULT_BROKER_URL;
     private static String queueName = "warehouse-LINZ";
 
-    public String readMessageQueue() {
+    public String getAllWarehouseData() {
         System.out.println( "Receiver started." );
 
         // Create the connection.
@@ -42,13 +41,17 @@ public class MOMReceiverService {
 
             // Create the session
             session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            destination = session.createQueue(queueName);
+            destination = session.createTopic(queueName);
 
             // Create the consumer
             consumer = session.createConsumer(destination);
 
             // Start receiving
             receivedMessages = new StringBuilder();
+
+            // Let's send the warehouse data here
+            new MOMSender();
+
             TextMessage message = (TextMessage) consumer.receive(1000);
             while ( message != null ) {
                 receivedMessages.append(message.getText());
