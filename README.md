@@ -1,0 +1,2 @@
+# DEZSYS_GK772_WAREHOUSE_MOM
+My implementation of the SYT DEZSYS_GK772_WAREHOUSE_MOM task.
