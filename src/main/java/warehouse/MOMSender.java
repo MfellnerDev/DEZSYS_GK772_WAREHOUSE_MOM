@@ -38,7 +38,7 @@ public class MOMSender {
 
             // Create the session
             session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            destination = session.createTopic(queueName);
+            destination = session.createQueue(queueName);
 
             // Create the producer
             producer = session.createProducer(destination);

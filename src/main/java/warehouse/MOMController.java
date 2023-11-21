@@ -19,6 +19,7 @@ public class MOMController {
     @RequestMapping(value = "/warehouse/all", produces = MediaType.APPLICATION_JSON_VALUE)
     public String allWarehouseData()    {
         // send, read and return all messages from the queue
+        new MOMSender();
         return new MOMReceiver().getAllWarehouseData();
     }
 }

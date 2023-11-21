@@ -12,7 +12,7 @@ import javax.jms.TextMessage;
 
 /**
  * Receiver MOM Class
- * It sends AND receives the data from a Topic
+ * receives the data from a Topic
  *
  * @author Manuel Fellner
  * @version 14.11.2023
@@ -41,16 +41,13 @@ public class MOMReceiver {
 
             // Create the session
             session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            destination = session.createTopic(queueName);
+            destination = session.createQueue(queueName);
 
             // Create the consumer
             consumer = session.createConsumer(destination);
 
             // Start receiving
             receivedMessages = new StringBuilder();
-
-            // Let's send the warehouse data here
-            new MOMSender();
 
             TextMessage message = (TextMessage) consumer.receive(1000);
             while ( message != null ) {
