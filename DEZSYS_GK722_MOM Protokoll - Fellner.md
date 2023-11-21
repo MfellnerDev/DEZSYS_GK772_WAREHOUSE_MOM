@@ -79,17 +79,31 @@ public class MOMApplication {
 
 In dieser Applikation wird das Schreiben sowie das Lesen in/aus der Message Queue von einem Zugriff auf `http://localhost:8081/wharehouse/all` getriggert.
 Dafür haben wir einen extra Controller aufgesetzt:
-```java
+```java  
 @RestController  
 public class MOMController {  
+    private StringBuilder messageQueueResultsBuilder = new StringBuilder();  
   
     @CrossOrigin  
     @RequestMapping(value = "/warehouse/all", produces = MediaType.APPLICATION_JSON_VALUE)  
     public String allWarehouseData()    {  
         // send, read and return all messages from the queue  
-        return new MOMReceiver().getAllWarehouseData();  
+        new MOMSender();  
+        formatJSONString(new MOMReceiver().getAllWarehouseData());  
+        return this.messageQueueResultsBuilder.toString();  
     }  
-}
+  
+    /**  
+     * Utility method that formats a java string into a valid JSON string     * (in our case we "merge" single JSON elements into an array of them)     * @param newMessage  
+     */  
+    public void formatJSONString(String newMessage)    {  
+        if (this.messageQueueResultsBuilder.isEmpty()) {  
+            this.messageQueueResultsBuilder.append("[").append(newMessage).append("]");  
+        } else if (this.messageQueueResultsBuilder.charAt(this.messageQueueResultsBuilder.length() - 1) == ']') {  
+            this.messageQueueResultsBuilder.deleteCharAt(this.messageQueueResultsBuilder.length() - 1);  
+            this.messageQueueResultsBuilder.append(",").append(newMessage).append("]");  
+        }  
+    }
 ```
 
 
@@ -100,60 +114,62 @@ In diesem werden die Daten der Wharehouse API (-> 1. Aufgabe) konsumiert, gespei
 
 Der Code ist der folgende:
 ```java
-private static String warehouseUUID = "469d7240-b974-441d-9562-2c56a7b28767";  
-private static String warehouseAPIUrl = "http://localhost:8080/warehouse/" + warehouseUUID + "/data";  
+public class MOMSender {  
   
-private static String user = ActiveMQConnection.DEFAULT_USER;  
-private static String password = ActiveMQConnection.DEFAULT_PASSWORD;  
-private static String url = ActiveMQConnection.DEFAULT_BROKER_URL;  
-private static String queueName = "warehouse-LINZ";  
+    private static String warehouseUUID = "469d7240-b974-441d-9562-2c56a7b28767";  
+    private static String warehouseAPIUrl = "http://localhost:8080/warehouse/" + warehouseUUID + "/data";  
   
-public MOMSender() {  
-    System.out.println("Sender started...");  
+    private static String user = ActiveMQConnection.DEFAULT_USER;  
+    private static String password = ActiveMQConnection.DEFAULT_PASSWORD;  
+    private static String url = ActiveMQConnection.DEFAULT_BROKER_URL;  
+    private static String queueName = "warehouse-LINZ";  
   
-    // create a connection to the apacheMQ broker  
-    Session session = null;  
-    Connection connection = null;  
-    MessageProducer producer = null;  
-    Destination destination = null;  
-    try {  
-        // init new connection  
-        ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(user, password, url);  
-        connection = connectionFactory.createConnection();  
-        connection.start();  
+    public MOMSender() {  
+        System.out.println("Sender started...");  
   
-        // Create the session  
-        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);  
-        destination = session.createTopic(queueName);  
+        // create a connection to the apacheMQ broker  
+        Session session = null;  
+        Connection connection = null;  
+        MessageProducer producer = null;  
+        Destination destination = null;  
+        try {  
+            // init new connection  
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(user, password, url);  
+            connection = connectionFactory.createConnection();  
+            connection.start();  
   
-        // Create the producer  
-        producer = session.createProducer(destination);  
-        producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);  
+            // Create the session  
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);  
+            destination = session.createQueue(queueName);  
   
-        // Create the message  
-        String currentWarehouseData = consumeWarehouseAPI();  
-        TextMessage message = session.createTextMessage(currentWarehouseData);  
-        producer.send(message);  
-        System.out.println(message.getText());  
+            // Create the producer  
+            producer = session.createProducer(destination);  
+            producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);  
   
-        connection.stop();  
+            // Create the message  
+            String currentWarehouseData = consumeWarehouseAPI();  
+            TextMessage message = session.createTextMessage(currentWarehouseData);  
+            producer.send(message);  
+            System.out.println(message.getText());  
   
-    } catch (Exception e)   {  
-        System.out.println("[MessageProducer] Caught: " + e);  
-        e.printStackTrace();  
-    } finally {  
-        try { producer.close(); } catch ( Exception e ) {}  
-        try { session.close(); } catch ( Exception e ) {}  
-        try { connection.close(); } catch ( Exception e ) {}  
+            connection.stop();  
+  
+        } catch (Exception e)   {  
+            System.out.println("[MessageProducer] Caught: " + e);  
+            e.printStackTrace();  
+        } finally {  
+            try { producer.close(); } catch ( Exception e ) {}  
+            try { session.close(); } catch ( Exception e ) {}  
+            try { connection.close(); } catch ( Exception e ) {}  
+        }  
+        System.out.println("Sender finished.");  
     }  
-    System.out.println("Sender finished.");  
-}  
   
-public static String consumeWarehouseAPI() {  
-    System.out.println("Consuming the warehouse API with the url " + warehouseAPIUrl + "...");  
-    RestTemplate restTemplate = new RestTemplate();  
-    return restTemplate.getForObject(warehouseAPIUrl, String.class);  
-}
+    public static String consumeWarehouseAPI() {  
+        System.out.println("Consuming the warehouse API with the url " + warehouseAPIUrl + "...");  
+        RestTemplate restTemplate = new RestTemplate();  
+        return restTemplate.getForObject(warehouseAPIUrl, String.class);  
+    }
 ```
 
 - Wie man hier sehen kann, verwenden wir hier keine klassische `Queue`, sondern ein `Topic`. Das heißt, dass der Receiver immer aktiv sein muss, sobald Daten in die MOM geschickt werden.
@@ -164,74 +180,60 @@ Diese Klasse ist die wichtigste - Sie beinhaltet das Senden sowie das Empfangen 
 
 Der Code ist hierbei der folgende:
 ```java
-private static String user = ActiveMQConnection.DEFAULT_USER;  
-private static String password = ActiveMQConnection.DEFAULT_PASSWORD;  
-private static String url = ActiveMQConnection.DEFAULT_BROKER_URL;  
-private static String queueName = "warehouse-LINZ";  
+public class MOMReceiver {  
+    private static String user = ActiveMQConnection.DEFAULT_USER;  
+    private static String password = ActiveMQConnection.DEFAULT_PASSWORD;  
+    private static String url = ActiveMQConnection.DEFAULT_BROKER_URL;  
+    private static String queueName = "warehouse-LINZ";  
   
-public String getAllWarehouseData() {  
-    System.out.println( "Receiver started." );  
+    public String getAllWarehouseData() {  
+        System.out.println( "Receiver started." );  
   
-    // Create the connection.  
-    Session session = null;  
-    Connection connection = null;  
-    MessageConsumer consumer = null;  
-    Destination destination = null;  
-    StringBuilder receivedMessages = null;  
+        // Create the connection.  
+        Session session = null;  
+        Connection connection = null;  
+        MessageConsumer consumer = null;  
+        Destination destination = null;  
+        StringBuilder receivedMessages = null;  
   
-    try {  
-        ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(user, password, url);  
-        connection = connectionFactory.createConnection();  
-        connection.start();  
+        try {  
+            ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(user, password, url);  
+            connection = connectionFactory.createConnection();  
+            connection.start();  
   
-        // Create the session  
-        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);  
-        destination = session.createTopic(queueName);  
+            // Create the session  
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);  
+            destination = session.createQueue(queueName);  
   
-        // Create the consumer  
-        consumer = session.createConsumer(destination);  
+            // Create the consumer  
+            consumer = session.createConsumer(destination);  
   
-        // Start receiving  
-        receivedMessages = new StringBuilder();  
+            // Start receiving  
+            receivedMessages = new StringBuilder();  
   
-        // Let's send the warehouse data here  
-        new MOMSender();  
+            TextMessage message = (TextMessage) consumer.receive(1000);  
+            while ( message != null ) {  
+                receivedMessages.append(message.getText());  
+                message.acknowledge();  
+                message = (TextMessage) consumer.receive(1000);  
+            }  
+            connection.stop();  
+        } catch (Exception e) {  
+            System.out.println("[MessageConsumer] Caught: " + e);  
+            e.printStackTrace();  
   
-        TextMessage message = (TextMessage) consumer.receive(1000);  
-        while ( message != null ) {  
-            receivedMessages.append(message.getText());  
-            message.acknowledge();  
-            message = (TextMessage) consumer.receive(1000);  
+        } finally {  
+            try { consumer.close(); } catch ( Exception e ) {}  
+            try { session.close(); } catch ( Exception e ) {}  
+            try { connection.close(); } catch ( Exception e ) {}  
+  
         }  
-        connection.stop();  
-  
-    } catch (Exception e) {  
-        System.out.println("[MessageConsumer] Caught: " + e);  
-        e.printStackTrace();  
-  
-    } finally {  
-        try { consumer.close(); } catch ( Exception e ) {}  
-        try { session.close(); } catch ( Exception e ) {}  
-        try { connection.close(); } catch ( Exception e ) {}  
-  
-    }  
-    System.out.println( "Receiver finished." );  
-    System.out.println(receivedMessages.toString());  
-    return receivedMessages.toString();  
+        System.out.println( "Receiver finished." );  
+        System.out.println(receivedMessages.toString());  
+        return receivedMessages.toString();  
+    }   
 }
 ```
-
-Hierbei ist besonders die folgende Codezeile wichtig:
-```java
-        // Let's send the warehouse data here  
-        new MOMSender();  
-```
-
-Wenn wir uns erinnern: Wir verwenden hier keine `Queues`, sondern `Topics`. Topics sind quasi Abos, welche Clients machen können.
-Ein Client kann also das `warehouse-LINZ` Topic abonnieren und bekommt dann direkt, nachdem eine Nachricht eingegangen ist, diese zugeschickt.
-Das bedeutet aber auch, dass die Nachricht an das Topic gesendet werden muss, wenn auch der Receiver aktiv und bereit ist.
-
-Wenn jetzt nur der Sender die Nachricht in das Topic sendet, der Receiver aber nicht aktiv ist, wird das Topic leer sein (diese Erkenntnis habe ich voller Scmerz gemacht).
 
 # 3. Testen des Programmes
 
@@ -239,4 +241,4 @@ Wir starten das Programm einmal und navigieren zur URL, welche den Sender sowie 
 `http://localhost:8081/wharehouse/all`
 
 Wir werden mit folgendem Ergebnis begrüßt; den Daten des Linzer Warenhauses:
-![](https://uploads.servus.space/k0GJ04I99ElU.png)
+![](https://uploads.servus.space/U1nvplGscyt0.png)
