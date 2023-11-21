@@ -56,7 +56,6 @@ public class MOMReceiver {
                 message = (TextMessage) consumer.receive(1000);
             }
             connection.stop();
-
         } catch (Exception e) {
             System.out.println("[MessageConsumer] Caught: " + e);
             e.printStackTrace();
